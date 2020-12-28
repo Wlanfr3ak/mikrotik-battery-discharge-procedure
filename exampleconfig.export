@@ -1,0 +1,136 @@
+
+
+
+
+
+
+
+
+
+
+  MMM      MMM       KKK                          TTTTTTTTTTT      KKK
+  MMMM    MMMM       KKK                          TTTTTTTTTTT      KKK
+  MMM MMMM MMM  III  KKK  KKK  RRRRRR     OOOOOO      TTT     III  KKK  KKK
+  MMM  MM  MMM  III  KKKKK     RRR  RRR  OOO  OOO     TTT     III  KKKKK
+  MMM      MMM  III  KKK KKK   RRRRRR    OOO  OOO     TTT     III  KKK KKK
+  MMM      MMM  III  KKK  KKK  RRR  RRR   OOOOOO      TTT     III  KKK  KKK
+
+  MikroTik RouterOS 6.48 (c) 1999-2020       http://www.mikrotik.com/
+
+[?]             Gives the list of available commands
+command [?]     Gives help on the command and list of arguments
+
+[Tab]           Completes the command/word. If the input is ambiguous,
+                a second [Tab] gives possible options
+
+/               Move up to base level
+..              Move up one level
+/command        Use command at the base level
+[admin@Voltmonitor-Akku1] > export
+# dec/28/2020 11:00:28 by RouterOS 6.48
+# software id = removed
+#
+# model = 750UP
+# serial number = removed
+/interface bridge
+add name=bridge1
+/interface wireless security-profiles
+set [ find default=yes ] supplicant-identity=MikroTik
+/user group
+set full policy="local,telnet,ssh,ftp,reboot,read,write,policy,test,winbox,passw\
+    ord,web,sniff,sensitive,api,romon,dude,tikapp"
+/interface bridge port
+add bridge=bridge1 interface=all multicast-router=disabled
+/ip neighbor discovery-settings
+set discover-interface-list=!dynamic
+/ip dhcp-client
+add disabled=no interface=bridge1
+/ip dns
+set allow-remote-requests=yes
+/system clock
+set time-zone-name=Europe/Berlin
+/system identity
+set name=Voltmonitor-Akku1
+/system ntp client
+set enabled=yes primary-ntp=162.159.200.123
+/system scheduler
+add interval=10m name=voltmonitor on-event=voltmonitor policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    start-date=dec/25/2020 start-time=00:00:00
+add disabled=yes interval=10m name=voltreport on-event=report policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon \
+    start-date=dec/25/2020 start-time=00:00:00
+/system script
+add dont-require-permissions=no name=voltmonitor owner=admin policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="#se\
+    t lowvoltalarm to desired alarm voltage in tenths of a volt. 125 = 12.5v\r\
+    \n:global lowvoltalarm 125\r\
+    \n:global highvolt\r\
+    \n:global lowvolt\r\
+    \n:global starttime\r\
+    \n:global hivolttime\r\
+    \n:global lovolttime\r\
+    \n:global vh\r\
+    \n:local thisbox [/system identity get name]\r\
+    \n:global voltage [/system health get voltage]\r\
+    \n:local thistime [/system clock get time]\r\
+    \n:local thisdate [/system clock get date]\r\
+    \n:local thishour [:pick \$thistime 0 2]\r\
+    \n:local emessage (\$thisbox . \" voltage is \" . [:pick \$voltage 0 2] . \"\
+    .\" . [:pick \$voltage 2 3])\r\
+    \n:if ([:len \$lowvolt] < 1) do={:set lowvolt 999; :set highvolt 0}\r\
+    \n# set your email address in the next line\r\
+    \n:if (\$voltage <= \$lowvoltalarm) do={/tool e-mail send to=\"voltmonitor@\
+    exampledomain.com\" subject=\"\$thisbox low voltage\" body=\$emessage}\r\
+    \n:if (\$voltage > \$highvolt) do={:set highvolt \$voltage; :set hivolttime \
+    (\$thistime . \" \" . \$thisdate)}\r\
+    \n:if (\$voltage < \$lowvolt) do={:set lowvolt \$voltage; :set lovolttime (\
+    \$thistime . \" \" . \$thisdate)}\r\
+    \n:if ([:len \$vh] > 0) do={:set vh ([:toarray \$voltage] + \$vh)} else={:se\
+    t vh [:toarray \$voltage]}\r\
+    \n:if ([:len \$starttime] < 1) do={:set starttime (\$thistime . \" \" . \$th\
+    isdate)}\r\
+    \n#:if (\$thishour = \"23\") do={:execute voltreport}\r\
+    \n:if (\$thishour = \"23\") do={/system script run voltreport}"
+add dont-require-permissions=no name=voltreport owner=admin policy=\
+    ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source=":gl\
+    obal highvolt\r\
+    \n:global lowvolt\r\
+    \n:global hivolttime\r\
+    \n:global lovolttime\r\
+    \n:global starttime\r\
+    \n:global vh\r\
+    \n:local tvolt\r\
+    \n:local thisbox [/system identity get name]\r\
+    \n:local thisdate [/system clock get date]\r\
+    \n:local thishour\r\
+    \n:local emessage \"Daily voltage report for \$thisbox on \$thisdate\\n\\n\"\
+    \r\
+    \n:if ([:len \$vh] > 0) do={\r\
+    \n    :for x from=0 to=([:len \$vh]-1) step=1 do={\r\
+    \n        :set tvolt [:tostr [:pick \$vh \$x]]\r\
+    \n        :set thishour [:tostr (23 - \$x)]\r\
+    \n        :while ([:len \$thishour] < 2) do={:set thishour (\"0\" . \$thisho\
+    ur)}\r\
+    \n        :set emessage (\$emessage . \$thishour . \":00 = \" . [:pick \$tvo\
+    lt 0 2] . \".\" . [:pick \$tvolt 2 3] .  \"\\n\")\r\
+    \n    }\r\
+    \n    :set emessage (\$emessage . \"\\nSince voltmonitor started on \" . \$s\
+    tarttime . \"\\n\")\r\
+    \n    :set tvolt [:tostr \$highvolt]\r\
+    \n    :set emessage (\$emessage . \"Maximum = \" . [:pick \$tvolt 0 2] . \".\
+    \" . [:pick \$tvolt 2 3] . \"v at \" . \$hivolttime . \"\\n\")\r\
+    \n    :set tvolt [:tostr \$lowvolt]\r\
+    \n    :set emessage (\$emessage . \"Minimum = \" . [:pick \$tvolt 0 2] . \".\
+    \" . [:pick \$tvolt 2 3] . \"v at \" . \$lovolttime . \"\\n\")\r\
+    \n# set email address in next line\r\
+    \n    /tool e-mail send to=\"voltmonitor@exampledomain.com\" subject=\"\$thisb\
+    ox Voltage Report\" body=\$emessage\r\
+    \n}\r\
+    \n# remark out the next line for testing to avoid resetting the voltage arra\
+    y\r\
+    \n:set vh"
+/tool e-mail
+set address=mail.exampledomain.com from=voltmonitor@exampledomain.com password=\
+    V3rIS3cur3PAASw0rd port=587 start-tls=yes user=voltmonitor@exampledomain.com
+[admin@Voltmonitor-Akku1] > 
