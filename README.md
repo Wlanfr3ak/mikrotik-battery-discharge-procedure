@@ -5,6 +5,7 @@ Step 1:
 
 /tool e-mail must be set correctly to send email
 Example:
+
 ‘‘‘
 /tool e-mail set address=mail.exampledomain.com from=voltmonitor@exampledomain.com password=V3rIS3cur3PAASw0rd port=587 start-tls=yes user=voltmonitor@exampledomain.com
 ‘‘‘
