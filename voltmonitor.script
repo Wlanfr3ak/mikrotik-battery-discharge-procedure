@@ -1,0 +1,24 @@
+#Original from: https://wiki.mikrotik.com/wiki/Monitor_input_voltage_on_RB333/433AH
+#set lowvoltalarm to desired alarm voltage in tenths of a volt. 125 = 12.5v
+:global lowvoltalarm 125
+:global highvolt
+:global lowvolt
+:global starttime
+:global hivolttime
+:global lovolttime
+:global vh
+:local thisbox [/system identity get name]
+:global voltage [/system health get voltage]
+:local thistime [/system clock get time]
+:local thisdate [/system clock get date]
+:local thishour [:pick $thistime 0 2]
+:local emessage ($thisbox . " voltage is " . [:pick $voltage 0 2] . "." . [:pick $voltage 2 3])
+:if ([:len $lowvolt] < 1) do={:set lowvolt 999; :set highvolt 0}
+# set your email address in the next line
+:if ($voltage <= $lowvoltalarm) do={/tool e-mail send to="voltmonitor@exampledomain.com" subject="$thisbox low voltage" body=$emessage}
+:if ($voltage > $highvolt) do={:set highvolt $voltage; :set hivolttime ($thistime . " " . $thisdate)}
+:if ($voltage < $lowvolt) do={:set lowvolt $voltage; :set lovolttime ($thistime . " " . $thisdate)}
+:if ([:len $vh] > 0) do={:set vh ([:toarray $voltage] + $vh)} else={:set vh [:toarray $voltage]}
+:if ([:len $starttime] < 1) do={:set starttime ($thistime . " " . $thisdate)}
+#:if ($thishour = "23") do={:execute voltreport}
+:if ($thishour = "23") do={/system script run voltreport}
