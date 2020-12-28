@@ -1,0 +1,29 @@
+#Original from: https://wiki.mikrotik.com/wiki/Monitor_input_voltage_on_RB333/433AH
+:global highvolt
+:global lowvolt
+:global hivolttime
+:global lovolttime
+:global starttime
+:global vh
+:local tvolt
+:local thisbox [/system identity get name]
+:local thisdate [/system clock get date]
+:local thishour
+:local emessage "Daily voltage report for $thisbox on $thisdate\n\n"
+:if ([:len $vh] > 0) do={
+    :for x from=0 to=([:len $vh]-1) step=1 do={
+        :set tvolt [:tostr [:pick $vh $x]]
+        :set thishour [:tostr (23 - $x)]
+        :while ([:len $thishour] < 2) do={:set thishour ("0" . $thishour)}
+        :set emessage ($emessage . $thishour . ":00 = " . [:pick $tvolt 0 2] . "." . [:pick $tvolt 2 3] .  "\n")
+    }
+    :set emessage ($emessage . "\nSince voltmonitor started on " . $starttime . "\n")
+    :set tvolt [:tostr $highvolt]
+    :set emessage ($emessage . "Maximum = " . [:pick $tvolt 0 2] . "." . [:pick $tvolt 2 3] . "v at " . $hivolttime . "\n")
+    :set tvolt [:tostr $lowvolt]
+    :set emessage ($emessage . "Minimum = " . [:pick $tvolt 0 2] . "." . [:pick $tvolt 2 3] . "v at " . $lovolttime . "\n")
+# set email address in next line
+    /tool e-mail send to="voltmonitor@exampledomain.com" subject="$thisbox Voltage Report" body=$emessage
+}
+# remark out the next line for testing to avoid resetting the voltage array
+:set vh
