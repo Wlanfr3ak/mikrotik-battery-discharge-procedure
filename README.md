@@ -3,7 +3,11 @@ This is a very dirty Idea to measurement a Battery Status over Time with a old M
 
 Step 1: 
 
-/tool e-mail must be set correctly to send email,
+/tool e-mail must be set correctly to send email
+Example:
+‘‘‘
+/tool e-mail set address=mail.exampledomain.com from=voltmonitor@exampledomain.com password=V3rIS3cur3PAASw0rd port=587 start-tls=yes user=voltmonitor@exampledomain.com
+‘‘‘
 
 /system ntp client must be set correctly for the correct time after a reboot,
 
